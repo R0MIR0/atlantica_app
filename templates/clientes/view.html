@@ -1,0 +1,45 @@
+<!-- templates/clientes/view.html -->
+<div class="p-4">
+    <div class="text-center mb-4">
+        <h3 class="text-primary fw-bold">{{ cliente.empresa }}</h3>
+        <p class="text-muted">{{ cliente.razao_social }}</p>
+        
+        <span class="badge bg-{{ 'success' if cliente.status_cliente == 'RESERVADO' else 'secondary' }} fs-6 px-4 py-2">
+            {{ 'RESERVADO' if cliente.status_cliente == 'RESERVADO' else 'SEM RESERVA' }}
+        </span>
+    </div>
+
+    <hr>
+
+    <div class="row g-3">
+        <div class="col-md-6"><strong>CNPJ:</strong> <span class="fw-bold">{{ cliente.cnpj }}</span></div>
+        <div class="col-md-6"><strong>Inscrição Estadual:</strong> {{ cliente.ie or 'Não informada' }}</div>
+        
+        <div class="col-12"><strong>Representante:</strong> 
+            <span class="text-success fw-bold">{{ cliente.nome_representante or 'Sem representante' }}</span>
+        </div>
+
+        <div class="col-12">
+            <strong>Endereço:</strong><br>
+            <span class="text-uppercase">
+                {{ cliente.logradouro }}, {{ cliente.numero }}
+                {% if cliente.complemento %} - {{ cliente.complemento }}{% endif %}<br>
+                {{ cliente.bairro }} - {{ cliente.cidade }}/{{ cliente.estado }}<br>
+                CEP: {{ cliente.cep or 'Não informado' }}
+            </span>
+        </div>
+
+        <div class="col-md-4"><strong>Contato:</strong> {{ cliente.nome_contato or '-' }}</div>
+        <div class="col-md-4"><strong>Telefone:</strong> {{ cliente.telefone_contato or '-' }}</div>
+        <div class="col-md-4"><strong>E-mail:</strong> {{ cliente.email_contato or '-' }}</div>
+    </div>
+
+    <hr class="my-4">
+
+    <div class="text-end">
+        <button type="button" class="btn btn-secondary me-3" data-bs-dismiss="modal">Fechar</button>
+        <a href="{{ url_for('cliente_form', id=cliente.id) }}" class="btn btn-warning">
+            Editar Cliente
+        </a>
+    </div>
+</div>

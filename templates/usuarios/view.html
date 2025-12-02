@@ -1,0 +1,57 @@
+<div class="p-4">
+    <!-- Título centralizado -->
+    <div class="text-center mb-4">
+        <h3 class="text-primary fw-bold">{{ usuario.nome }}</h3>
+        <p class="text-muted fs-5">{{ usuario.email }}</p>
+        
+        <span class="badge bg-{{ 'success' if usuario.status == 'ATIVO' else 'secondary' }} fs-6 px-4 py-2">
+            {{ usuario.status }}
+        </span>
+    </div>
+
+    <hr>
+
+    <div class="row g-3">
+        <!-- Telefone -->
+        <div class="col-md-6">
+            <strong>Telefone:</strong> 
+            <span class="fw-bold">{{ usuario.telefone or 'Não informado' }}</span>
+        </div>
+
+        <!-- Tipo de usuário -->
+        <div class="col-md-6">
+            <strong>Tipo:</strong> 
+            {{ usuario.tipo.tipo_usuario if usuario.tipo else 'Não definido' }}
+        </div>
+
+        <!-- Nível de acesso -->
+        <div class="col-md-6">
+            <strong>Nível de Acesso:</strong>
+            {% if usuario.nivel_acesso == 0 %}
+                <span class="text-danger fw-bold">ADMINISTRADOR</span>
+            {% else %}
+                <span class="fw-bold">NÍVEL {{ usuario.nivel_acesso }}</span>
+            {% endif %}
+        </div>
+
+        <!-- Gerente (só aparece se existir) -->
+        {% if usuario.gerente %}
+        <div class="col-md-6">
+            <strong>Gerente:</strong> 
+            <span class="text-success fw-bold">{{ usuario.gerente.nome }}</span>
+        </div>
+        {% endif %}
+    </div>
+
+    <hr class="my-4">
+
+    <!-- Botões no final -->
+    <div class="text-end">
+        <button type="button" class="btn btn-secondary me-3" data-bs-dismiss="modal">
+            Fechar
+        </button>
+        <a href="{{ url_for('usuario_form', id=usuario.id) }}" class="btn btn-warning">
+            Editar Usuário
+        </a>
+    </div>
+</div>

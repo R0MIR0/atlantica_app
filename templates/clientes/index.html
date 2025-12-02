@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+{% block title %}Clientes{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="text-primary fw-bold">
+        <i class="bi bi-building"></i> Clientes
+    </h2>
+    {% if tem_permissao("Clientes - Criar") %}
+    <a href="{{ url_for('cliente_form') }}" class="btn btn-primary shadow">
+        <i class="bi bi-plus-circle"></i> Novo Cliente
+    </a>
+    {% endif %}
+</div>
+
+<!-- BUSCA -->
+<div class="card card-atlantica mb-4">
+    <div class="card-body">
+        <div class="input-group">
+            <span class="input-group-text"><i class="bi bi-search"></i></span>
+            <input type="text" class="form-control" placeholder="Buscar por empresa, CNPJ ou representante..." id="busca">
+        </div>
+    </div>
+</div>
+
+<!-- TABELA -->
+<div class="card card-atlantica">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0 align-middle" id="tabelaClientes">
+                <thead class="table-primary">
+                    <tr>
+                        <th>EMPRESA</th>
+                        <th>CNPJ</th>
+                        <th>REPRESENTANTE</th>
+                        <th>CIDADE</th>
+                        <th>STATUS</th>
+                        <th class="text-center">AÇÕES</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for c in clientes %}
+                    <tr>
+                        <td class="fw-bold text-uppercase">{{ c.empresa }}</td>
+                        <td><strong>{{ c.cnpj }}</strong></td>
+                        <td>{{ c.nome_representante or '<em class="text-muted">Sem representante</em>'|safe }}</td>
+                        <td>{{ c.cidade }}/{{ c.estado }}</td>
+                        <td>
+                            <span class="badge bg-{{ 'success' if c.status_cliente == 'RESERVADO' else 'secondary' }}">
+                                {{ c.status_cliente }}
+                            </span>
+                        </td>
+                        <td class="text-center">
+                            <!-- VER DETALHES -->
+                            {% if tem_permissao("Clientes - Listar") %}
+                            <button class="btn btn-sm btn-info text-white me-1" title="Ver detalhes"
+                                    onclick="verCliente({{ c.id }})">
+                                <i class="bi bi-eye"></i> Ver
+                            </button>
+                            {% endif %}
+
+                            <!-- EDITAR -->
+                            {% if tem_permissao("Clientes - Editar") %}
+                            <a href="{{ url_for('cliente_form', id=c.id) }}" class="btn btn-sm btn-warning" title="Editar">
+                                <i class="bi bi-pencil"></i> Editar
+                            </a>
+                            {% endif %}
+
+                            <!-- EXCLUIR -->
+                            {% if tem_permissao("Clientes - Excluir") %}
+                            <button class="btn btn-sm btn-danger ms-1" title="Excluir"
+                                    onclick="excluirCliente({{ c.id }}, '{{ c.empresa|e }}')">
+                                <i class="bi bi-trash"></i> Excluir
+                            </button>
+                            {% endif %}
+
+                            <!-- Se não tiver nenhuma permissão de ação (opcional, fica limpo) -->
+                            {% if not tem_permissao("Clientes - Listar") and not tem_permissao("Clientes - Editar") and not tem_permissao("Clientes - Excluir") %}
+                            <small class="text-muted">—</small>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="text-center text-muted py-5">
+                            <i class="bi bi-building fs-1 d-block mb-3"></i>
+                            Nenhum cliente cadastrado ainda.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL DE DETALHES -->
+<div class="modal fade" id="clienteModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="modalTitle">Detalhes do Cliente</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="modalBody">
+                <!-- Conteúdo carregado via JS -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// CORRIGIDO: usa URL fixa com o ID diretamente
+function verCliente(id) {
+    fetch(`/clientes/view/${id}`)
+        .then(r => r.text())
+        .then(html => {
+            document.getElementById('modalBody').innerHTML = html;
+            document.getElementById('modalTitle').textContent = 'Detalhes do Cliente';
+            new bootstrap.Modal(document.getElementById('clienteModal')).show();
+        })
+        .catch(() => alert('Erro ao carregar detalhes do cliente.'));
+}
+
+function excluirCliente(id, nome) {
+    if (confirm(`Tem certeza que deseja EXCLUIR o cliente:\n\n"${nome}"?\n\nEsta ação não pode ser desfeita.`)) {
+        fetch(`/clientes/excluir/${id}`, { 
+            method: 'POST',
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(r => r.text())
+        .then(() => {
+            location.reload();
+        })
+        .catch(() => alert('Erro ao excluir cliente.'));
+    }
+}
+
+// Busca em tempo real
+document.getElementById('busca')?.addEventListener('input', function() {
+    const termo = this.value.toLowerCase();
+    document.querySelectorAll('#tabelaClientes tbody tr').forEach(tr => {
+        const texto = tr.textContent.toLowerCase();
+        tr.style.display = texto.includes(termo) ? '' : 'none';
+    });
+});
+
+// Fecha com ESC — versão curta e infalível
+document.addEventListener('keyup', function(e) {
+    if (e.key === 'Escape') {
+        const modal = document.getElementById('clienteModal');
+        if (modal) bootstrap.Modal.getInstance(modal)?.hide();
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+{% block title %}Usuários{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="text-primary fw-bold">
+        <i class="bi bi-people"></i> Usuários
+    </h2>
+
+    {% if tem_permissao("Usuários - Criar") %}
+    <a href="{{ url_for('usuario_form') }}" class="btn btn-primary shadow">
+        <i class="bi bi-plus-lg"></i> Novo Usuário
+    </a>
+    {% endif %}
+</div>
+
+<div class="card card-atlantica mb-4">
+    <div class="card-body">
+        <div class="input-group">
+            <span class="input-group-text"><i class="bi bi-search"></i></span>
+            <input type="text" class="form-control" placeholder="Buscar por nome, e-mail ou telefone..." id="buscaUsuario">
+        </div>
+    </div>
+</div>
+
+<div class="card card-atlantica">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0 align-middle" id="tabelaUsuarios">
+                <thead class="table-primary">
+                    <tr>
+                        <th>Nome</th>
+                        <th>Telefone</th>
+                        <th>E-mail</th>
+                        <th>Tipo</th>
+                        <th>Gerente</th>
+                        <th>Status</th>
+                        <th class="text-center">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for u in usuarios %}
+                    <tr>
+                        <td class="fw-bold text-uppercase">{{ u.nome.split()[0] }}</td>
+                        <td>{{ u.telefone or '-' }}</td>
+                        <td>{{ u.email }}</td>
+                        <td>
+                            <span class="badge bg-info">{{ u.tipo.tipo_usuario if u.tipo else '-' }}</span>
+                        </td>
+                        <td>
+                            {% if u.tipo and u.tipo.tipo_usuario == 'REPRESENTANTE' and u.gerente %}
+                                <span class="text-success fw-bold">
+                                    <i class="bi bi-person-check"></i> {{ u.gerente.nome.split()[0] }}
+                                </span>
+                            {% elif u.tipo and u.tipo.tipo_usuario == 'REPRESENTANTE' %}
+                                <span class="text-muted"><em>Sem gerente</em></span>
+                            {% else %}
+                                <span class="text-muted">—</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="badge bg-{{ 'success' if u.status == 'ATIVO' else 'secondary' }}">
+                                {{ u.status }}
+                            </span>
+                        </td>
+
+                        <!-- AÇÕES TOTALMENTE TRAVADAS POR PERMISSÃO -->
+                        <td class="text-center">
+                            <!-- VISUALIZAR (só precisa Listar) -->
+                            {% if tem_permissao("Usuários - Listar") %}
+                            <button class="btn btn-sm btn-info text-white me-1" title="Visualizar"
+                                    onclick="verUsuario({{ u.id }})">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                            {% endif %}
+
+                            <!-- EDITAR -->
+                            {% if tem_permissao("Usuários - Editar") %}
+                            <a href="{{ url_for('usuario_form', id=u.id) }}" class="btn btn-sm btn-warning" title="Editar">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            {% endif %}
+
+                            <!-- EXCLUIR -->
+                            {% if tem_permissao("Usuários - Excluir") %}
+                            <button class="btn btn-sm btn-danger ms-1" title="Excluir"
+                                    onclick="excluirUsuario({{ u.id }}, '{{ u.nome|e }}')">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                            {% endif %}
+
+                            <!-- Se não tiver nenhuma permissão de ação -->
+                            {% if not tem_permissao("Usuários - Listar") and not tem_permissao("Usuários - Editar") and not tem_permissao("Usuários - Excluir") %}
+                            <small class="text-muted">—</small>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="7" class="text-center text-muted py-5">
+                            <i class="bi bi-people fs-1 d-block mb-3"></i>
+                            Nenhum usuário cadastrado ainda.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Visualizar -->
+<div class="modal fade" id="modalVer" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">Detalhes do Usuário</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="conteudoModal"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+function verUsuario(id) {
+    fetch(`/usuarios/ver/${id}`)
+        .then(r => r.text())
+        .then(html => {
+            document.getElementById('conteudoModal').innerHTML = html;
+            new bootstrap.Modal(document.getElementById('modalVer')).show();
+        });
+}
+
+function excluirUsuario(id, nome) {
+    if (confirm(`Tem certeza que deseja excluir o usuário "${nome}"?`)) {
+        fetch(`/usuarios/excluir/${id}`, { method: 'POST' })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) location.reload();
+                else alert(data.message || 'Erro ao excluir');
+            });
+    }
+}
+
+// Busca em tempo real
+document.getElementById('buscaUsuario')?.addEventListener('input', function() {
+    const termo = this.value.toLowerCase();
+    document.querySelectorAll('#tabelaUsuarios tbody tr').forEach(tr => {
+        const texto = tr.textContent.toLowerCase();
+        tr.style.display = texto.includes(termo) ? '' : 'none';
+    });
+});
+</script>
+{% endblock %}

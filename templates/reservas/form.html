@@ -1,0 +1,103 @@
+<!-- templates/reservas/form.html -->
+<form method="POST" 
+      action="{{ url_for('reserva_salvar', id=reserva.id if reserva else None) }}"
+      class="needs-validation" novalidate>
+
+    <input type="hidden" name="cliente_id" id="cliente_id" value="{{ reserva.cliente_id if reserva else '' }}">
+
+    <!-- BUSCA DE CLIENTE -->
+    <div class="mb-4">
+        <label class="form-label fw-bold text-primary">Buscar Cliente *</label>
+        <input type="text" 
+               id="busca_empresa" 
+               class="form-control form-control-lg" 
+               placeholder="Digite o nome da empresa..." 
+               autocomplete="off"
+               value="{{ reserva.empresa if reserva else '' }}"
+               {{ 'readonly' if reserva else '' }}>
+        <div id="sugestoes" class="border bg-white rounded-bottom shadow-sm" 
+             style="max-height:300px; overflow-y:auto; display:none; position:absolute; z-index:1000; width:100%"></div>
+    </div>
+
+    <hr class="my-4">
+
+    <div id="dadosCliente" style="display: {{ 'block' if reserva else 'none' }};">
+        <div class="row g-3 mb-4">
+            <div class="col-md-8">
+                <label class="form-label">Empresa</label>
+                <input type="text" name="empresa" class="form-control bg-light" 
+                       value="{{ reserva.empresa if reserva else '' }}" readonly>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">CNPJ</label>
+                <input type="text" name="cnpj" class="form-control bg-light" 
+                       value="{{ reserva.cnpj if reserva else '' }}" readonly>
+            </div>
+        </div>
+
+        <div class="row g-3 mb-4">
+            <div class="col-md-6">
+                <label class="form-label fw-bold text-danger">Representante Principal *</label>
+                <select name="representante" class="form-select form-select-lg" required>
+                    <option value="">-- Escolha o representante --</option>
+                    {% for rep in representantes %}
+                    <option value="{{ rep.nome }}" {{ 'selected' if reserva and reserva.representante == rep.nome else '' }}>
+                        {{ rep.nome }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label fw-bold">Início *</label>
+                <input type="date" name="data_inicio" id="data_inicio" class="form-control" required
+                       value="{{ reserva.data_inicio.strftime('%Y-%m-%d') if reserva else hoje().strftime('%Y-%m-%d') }}">
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label fw-bold">Fim (automático)</label>
+                <input type="date" id="data_fim" class="form-control bg-light text-primary fw-bold" readonly>
+            </div>
+        </div>
+
+        <!-- FILA DE INTERESSE -->
+        <div class="mb-4">
+            <label class="form-label fw-bold text-info">Fila de Interesse</label>
+            <select id="select-fila" class="form-select mb-3">
+                <option value="">+ Adicionar à fila</option>
+                {% for rep in representantes %}
+                <option value="{{ rep.nome }}">{{ rep.nome }}</option>
+                {% endfor %}
+            </select>
+
+            <div id="fila-selecionados" class="border rounded p-3 bg-light" style="min-height:70px;">
+                {% if reserva and reserva.fila_interesse %}
+                    {% for nome in reserva.fila_interesse.split(',') %}
+                        {% if nome.strip() %}
+                        <span class="badge bg-primary me-2 mb-2 fs-6">
+                            {{ nome.strip() }}
+                            <button type="button" class="btn-close btn-close-white ms-2" style="font-size:0.7em;"></button>
+                        </span>
+                        {% endif %}
+                    {% endfor %}
+                {% endif %}
+            </div>
+            <input type="hidden" name="fila_interesse" id="fila_interesse_input" 
+                   value="{{ reserva.fila_interesse if reserva else '' }}">
+        </div>
+
+        <div class="text-end">
+            <button type="button" class="btn btn-secondary btn-lg me-3" data-bs-dismiss="modal">Cancelar</button>
+            <button type="submit" class="btn btn-success btn-lg px-5 shadow">
+                {{ 'Salvar Alterações' if reserva else 'Criar Reserva' }}
+            </button>
+        </div>
+    </div>
+
+    <!-- MENSAGEM INICIAL (só na criação) -->
+    <div id="msgInicial" class="text-center py-5" style="display: {{ 'none' if reserva else 'block' }};">
+        <i class="bi bi-building fs-1 text-muted mb-3"></i>
+        <h5 class="text-muted">Digite o nome da empresa acima para começar</h5>
+    </div>
+</form>
+

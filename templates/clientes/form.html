@@ -1,0 +1,194 @@
+{% extends "base.html" %}
+{% block title %} {{ 'Novo Cliente' if not cliente else 'Editar Cliente - ' + cliente.empresa }} {% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="text-primary fw-bold">
+        <i class="bi bi-building"></i>
+        {{ 'Novo Cliente' if not cliente else 'Editar Cliente' }}
+    </h2>
+    <a href="{{ url_for('clientes') }}" class="btn btn-secondary">
+        <i class="bi bi-arrow-left"></i> Voltar
+    </a>
+</div>
+
+<div class="card card-atlantica shadow-lg">
+    <div class="card-body p-5">
+        <form method="POST" action="" id="formCliente" class="needs-validation" novalidate>
+            <input type="hidden" name="id" value="{{ cliente.id if cliente else '' }}">
+
+            <div class="row g-3">
+
+                <!-- DADOS PRINCIPAIS -->
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">Empresa / Nome Fantasia <span class="text-danger">*</span></label>
+                    <input type="text" name="empresa" class="form-control text-uppercase fw-bold" required autofocus
+                           value="{{ cliente.empresa if cliente else '' }}" placeholder="Ex: Atlântica Distribuidora">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">Razão Social <span class="text-danger">*</span></label>
+                    <input type="text" name="razao_social" class="form-control text-uppercase" required
+                           value="{{ cliente.razao_social if cliente else '' }}">
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label fw-bold">CNPJ <span class="text-danger">*</span></label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-card-text"></i></span>
+                        <input type="text" name="cnpj" class="form-control" data-mask="cnpj" required
+                               value="{{ cliente.cnpj if cliente else '' }}"
+                               {{ 'readonly' if cliente else '' }} placeholder="00.000.000/0000-00">
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">Inscrição Estadual</label>
+                    <input type="text" name="ie" class="form-control text-uppercase"
+                           value="{{ cliente.ie if cliente else '' }}">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Grupo Econômico</label>
+                    <input type="text" name="grupo" class="form-control text-uppercase"
+                           value="{{ cliente.grupo if cliente else '' }}">
+                </div>
+
+                <!-- ENDEREÇO COM BUSCA POR CEP -->
+                <div class="col-md-3">
+                    <label class="form-label fw-bold">CEP <span class="text-danger">*</span></label>
+                    <div class="input-group">
+                        <input type="text" name="cep" id="cep" class="form-control" required
+                               value="{{ cliente.cep if cliente else '' }}" placeholder="00000-000">
+                        <button class="btn btn-outline-primary" type="button" id="btnBuscarCep">
+                            <i class="bi bi-geo-alt-fill"></i>
+                        </button>
+                        <div class="invalid-feedback">CEP inválido</div>
+                        <div class="valid-feedback">CEP encontrado!</div>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">Logradouro <span class="text-danger">*</span></label>
+                    <input type="text" name="logradouro" id="logradouro" class="form-control text-uppercase" required
+                           value="{{ cliente.logradouro if cliente else '' }}">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label fw-bold">Número <span class="text-danger">*</span></label>
+                    <input type="text" name="numero" class="form-control" required
+                           value="{{ cliente.numero if cliente else '' }}">
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">Complemento</label>
+                    <input type="text" name="complemento" id="complemento" class="form-control text-uppercase"
+                           value="{{ cliente.complemento if cliente else '' }}">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-bold">Bairro <span class="text-danger">*</span></label>
+                    <input type="text" name="bairro" id="bairro" class="form-control text-uppercase" required
+                           value="{{ cliente.bairro if cliente else '' }}">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label fw-bold">Cidade <span class="text-danger">*</span></label>
+                    <input type="text" name="cidade" id="cidade" class="form-control text-uppercase" required
+                           value="{{ cliente.cidade if cliente else '' }}">
+                </div>
+                <div class="col-md-1">
+                    <label class="form-label fw-bold">UF <span class="text-danger">*</span></label>
+                    <input type="text" name="estado" id="estado" class="form-control text-uppercase text-center" maxlength="2" required
+                           value="{{ cliente.estado if cliente else '' }}">
+                </div>
+
+                <!-- CONTATO -->
+                <div class="col-md-4">
+                    <label class="form-label">Nome do Contato</label>
+                    <input type="text" name="nome_contato" class="form-control text-uppercase"
+                           value="{{ cliente.nome_contato if cliente else '' }}">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Telefone do Contato</label>
+                    <input type="text" name="telefone_contato" class="form-control" data-mask="telefone"
+                           value="{{ cliente.telefone_contato if cliente else '' }}">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">E-mail do Contato</label>
+                    <input type="email" name="email_contato" class="form-control"
+                           value="{{ cliente.email_contato if cliente else '' }}">
+                </div>
+
+                <!-- REPRESENTANTE -->
+                <div class="col-md-8">
+                    <label class="form-label fw-bold">Representante</label>
+                    <select name="nome_representante" class="form-select">
+                        <option value="">-- Sem representante --</option>
+                        {% for rep in representantes %}
+                        <option value="{{ rep.nome }}"
+                            {{ 'selected' if cliente and cliente.nome_representante == rep.nome else '' }}>
+                            {{ rep.nome }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- STATUS DO CLIENTE (RESERVADO/SEM RESERVA) -->
+                <div class="col-md-4">
+                    <label class="form-label fw-bold">Status do Cliente</label>
+                    <select name="status_cliente" class="form-select">
+                        <option value="RESERVADO" {{ 'selected' if not cliente or cliente.status_cliente == 'ATIVO' else '' }}>RESERVADO</option>
+                        <option value="SEM RESERVA" {{ 'selected' if cliente and cliente.status_cliente == 'INATIVO' else '' }}>SEM RESERVA</option>
+                    </select>
+                </div>
+            </div>
+
+            
+            <hr class="my-5 border-primary">
+
+            <div class="text-end">
+                <a href="{{ url_for('clientes') }}" class="btn btn-secondary btn-lg me-3">
+                    <i class="bi bi-x-circle"></i> Cancelar
+                </a>
+                <button type="submit" class="btn btn-success btn-lg px-5 shadow">
+                    <i class="bi-check-circle-fill"></i>
+                    {{ 'Salvar Cliente' if not cliente else 'Atualizar Cliente' }}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- BUSCA AUTOMÁTICA POR CEP -->
+<script>
+document.getElementById('cep')?.addEventListener('blur', buscarCep);
+document.getElementById('btnBuscarCep')?.addEventListener('click', buscarCep);
+
+function buscarCep() {
+    let cep = document.getElementById('cep').value.replace(/\D/g, '');
+    if (cep.length !== 8) return;
+
+    fetch(`https://viacep.com.br/ws/${cep}/json/`)
+        .then(r => r.json())
+        .then(data => {
+            if (!data.erro) {
+                document.getElementById('logradouro').value = (data.logradouro || '').toUpperCase();
+                document.getElementById('bairro').value = (data.bairro || '').toUpperCase();
+                document.getElementById('cidade').value = (data.localidade || '').toUpperCase();
+                document.getElementById('estado').value = (data.uf || '').toUpperCase();
+                
+                document.getElementById('cep').classList.remove('is-invalid');
+                document.getElementById('cep').classList.add('is-valid');
+                document.querySelector('[name="numero"]').focus();
+            } else {
+                alert('CEP não encontrado!');
+                document.getElementById('cep').classList.add('is-invalid');
+            }
+        })
+        .catch(() => alert('Erro ao buscar CEP'));
+}
+
+// Máscara do CEP
+document.getElementById('cep')?.addEventListener('input', function(e) {
+    let v = e.target.value.replace(/\D/g, '').substring(0,8);
+    v = v.replace(/^(\d{5})(\d)/, '$1-$2');
+    e.target.value = v;
+});
+</script>
+{% endblock %}

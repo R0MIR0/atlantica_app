@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+{% block title %} {% if usuario %}Editar{% else %}Novo{% endif %} Usuário{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-person-plus"></i> 
+        {% if usuario %}Editar Usuário{% else %}Novo Usuário{% endif %}
+    </h2>
+    <a href="{{ url_for('usuarios') }}" class="btn btn-secondary">
+        <i class="bi bi-arrow-left"></i> Voltar
+    </a>
+</div>
+
+<div class="card card-atlantica">
+    <div class="card-body">
+        <form method="POST" id="formUsuario">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label">Nome completo <span class="text-danger">*</span></label>
+                    <input type="text" name="nome" class="form-control text-uppercase" 
+                           value="{{ usuario.nome if usuario else '' }}" required autofocus>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">E-mail <span class="text-danger">*</span></label>
+                    <input type="email" name="email" class="form-control" 
+                           value="{{ usuario.email if usuario else '' }}" required>
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">Telefone</label>
+                    <input type="text" name="telefone" class="form-control telefone" 
+                           value="{{ usuario.telefone if usuario else '' }}" placeholder="(99) 99999-9999">
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">Tipo de Usuário <span class="text-danger">*</span></label>
+                    <select name="tipo_usuario" class="form-select" id="tipoUsuario" required onchange="mostrarGerente()">
+                        <option value="">Selecione...</option>
+                        {% for t in tipos %}
+                        <option value="{{ t.id }}" 
+                            {% if usuario and usuario.tipo_usuario_id == t.id %}selected{% endif %}>
+                            {{ t.tipo_usuario }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- CAMPO GERENTE - SÓ APARECE SE FOR REPRESENTANTE -->
+                <div class="col-md-4" id="divGerente" style="display: none;">
+                    <label class="form-label">Gerente Responsável</label>
+                    <select name="gerente_id" class="form-select">
+                        <option value="">Nenhum</option>
+                        {% for g in gerentes %}
+                        <option value="{{ g.id }}" 
+                            {% if usuario and usuario.gerente_id == g.id %}selected{% endif %}>
+                            {{ g.nome }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">Nível de Acesso <span class="text-danger">*</span></label>
+                    <select name="nivel_acesso" class="form-select" required>
+                        {% for n in range(0, 11) %}
+                        <option value="{{ n }}" {% if usuario and usuario.nivel_acesso == n %}selected{% endif %}>
+                            {% if n == 0 %}ADMINISTRADOR{% else %}Nível {{ n }}{% endif %}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">Status <span class="text-danger">*</span></label>
+                    <select name="status" class="form-select" required>
+                        <option value="ATIVO" {% if usuario and usuario.status == 'ATIVO' %}selected{% endif %}>ATIVO</option>
+                        <option value="INATIVO" {% if usuario and usuario.status == 'INATIVO' %}selected{% endif %}>INATIVO</option>
+                    </select>
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">
+                        {% if usuario %}Nova Senha (deixe em branco para manter){% else %}Senha <span class="text-danger">*</span>{% endif %}
+                    </label>
+                    <input type="password" name="senha" class="form-control" {% if not usuario %}required{% endif %}>
+                </div>
+            </div>
+
+            <hr class="my-4">
+            <div class="text-end">
+                <button type="button" onclick="history.back()" class="btn btn-secondary me-2">
+                    <i class="bi bi-x-lg"></i> Cancelar
+                </button>
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-check-lg"></i> Salvar Usuário
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+// MOSTRA/ESCONDE O CAMPO GERENTE
+function mostrarGerente() {
+    const selectTipo = document.getElementById('tipoUsuario');
+    const divGerente = document.getElementById('divGerente');
+    
+    // Pega o texto da opção selecionada
+    const textoSelecionado = selectTipo.options[selectTipo.selectedIndex].text;
+
+    if (textoSelecionado === 'REPRESENTANTE') {
+        divGerente.style.display = 'block';
+    } else {
+        divGerente.style.display = 'none';
+        // limpa o campo quando esconder
+        divGerente.querySelector('select').value = '';
+    }
+}
+
+// Quando carregar a página, verifica se já está selecionado REPRESENTANTE
+document.addEventListener('DOMContentLoaded', function() {
+    mostrarGerente();
+});
+
+// Máscara de telefone
+document.querySelector('.telefone')?.addEventListener('input', function(e) {
+    let v = e.target.value.replace(/\D/g, '');
+    v = v.replace(/^(\d{2})(\d)/g, '($1) $2');
+    v = v.replace(/(\d{4,5})(\d{4})$/, '$1-$2');
+    e.target.value = v;
+});
+
+// Fechar com ESC
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') history.back();
+});
+</script>
+{% endblock %}

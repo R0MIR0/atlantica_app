@@ -1,0 +1,38 @@
+@app.route('/niveis_acesso')
+@login_required
+def niveis_acesso():
+    # Carrega permissões salvas do banco (ou arquivo JSON)
+    # Exemplo simples usando um JSON no banco ou dicionário
+    import json
+    config = Configuracao.query.first()
+    permissoes = json.loads(config.permissoes) if config and config.permissoes else {}
+    
+    permissoes_defaut = {
+        "usuarios": ["listar", "criar", "editar", "excluir"],
+        "consultas": ["listar", "criar", "aprovar"],
+        "clientes": ["listar", "criar", "editar", "excluir"],
+        "reservas": ["listar", "criar", "editar", "renovar", "excluir"],
+        "configuracoes": ["acessar"]
+    }
+
+    return render_template('niveis_acesso.html',
+                           permissoes=permissoes,
+                           permissoes_defaut=permissoes_defaut)
+
+@app.route('/niveis_acesso/salvar', methods=['POST'])
+@login_required
+def niveis_acesso_salvar():
+    if current_user.nivel_acesso != 0:
+        return jsonify(success=False, message='Apenas Administrador pode alterar')
+
+    dados = request.get_json()
+    # Salvar no banco (exemplo simples)
+    config = Configuracao.query.first()
+    if not config:
+        config = Configuracao(permissoes=json.dumps(dados))
+        db.session.add(config)
+    else:
+        config.permissoes = json.dumps(dados)
+    db.session.commit()
+    
+    return jsonify(success=True)

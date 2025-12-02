@@ -1,0 +1,259 @@
+{% extends "base.html" %}
+{% block title %}Consultas{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="text-primary fw-bold">
+        <i class="bi bi-file-earmark-text"></i> Consultas
+    </h2>
+
+    <!-- BOTÃO NOVA CONSULTA TRAVADO POR PERMISSÃO -->
+    {% if tem_permissao("Consultas - Criar") %}
+    <button class="btn btn-primary shadow" onclick="novaConsulta()">
+        <i class="bi bi-plus-circle"></i> Nova Consulta
+    </button>
+    {% endif %}
+</div>
+
+<!-- FILTRO -->
+<div class="card card-atlantica mb-4">
+    <div class="card-body">
+        <div class="input-group">
+            <span class="input-group-text"><i class="bi bi-search"></i></span>
+            <input type="text" class="form-control" placeholder="Buscar por empresa, CNPJ ou representante..." id="busca">
+        </div>
+    </div>
+</div>
+
+<!-- TABELA -->
+<div class="card card-atlantica">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0 align-middle" id="tabelaClientes">
+                <thead class="table-primary">
+                <tr>
+                    <th>CNPJ</th>
+                    <th>Empresa</th>
+                    <th>Representante</th>
+                    <th>Data</th>
+                    <th>Status</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for c in consultas %}
+                <tr>
+                    <td><strong>{{ c.cnpj }}</strong></td>
+                    <td class="text-uppercase fw-bold">{{ c.empresa }}</td>
+                    <td>{{ c.nome_representante }}</td>
+                    <td>{{ c.data_consulta.strftime('%d/%m/%Y') }}</td>
+                    <td>
+                        <span class="badge bg-{{ 'warning' if c.status_consulta=='PENDENTE' else 'success' if c.status_consulta=='APROVADO' else 'danger' }}">
+                            {{ c.status_consulta }}
+                        </span>
+                    </td>
+                    <td class="text-center">
+    <button class="btn btn-sm btn-info text-white me-1" onclick="location.href='/consultas/ver/{{c.id}}'">
+        <i class="bi bi-eye"></i>
+    </button>
+
+    <!-- BOTÕES APROVAR/REJEITAR TRAVADOS POR PERMISSÃO -->
+    {% if c.status_consulta == 'PENDENTE' and tem_permissao("Consultas - Aprovar") %}
+    <button class="btn btn-success btn-sm" onclick="aprovar({{c.id}})" title="Aprovar">
+        <i class="bi bi-check-square"></i>
+    </button>
+    <button class="btn btn-danger btn-sm" onclick="rejeitar({{c.id}})" title="Rejeitar">
+        <i class="bi bi-x-square"></i>
+    </button>
+    {% endif %}
+</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal fade" id="modal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="modalTitulo">Nova Consulta</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="modalCorpo"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+// === NOVA CONSULTA - DIGITA CNPJ ===
+function novaConsulta() {
+    document.getElementById('modalTitulo').innerText = 'Nova Consulta – Digite o CNPJ';
+    document.getElementById('modalCorpo').innerHTML = `
+        <div class="text-center py-5">
+            <h4 class="mb-4">Digite o CNPJ para continuar</h4>
+            <div class="input-group input-group-lg w-50 mx-auto" style="max-width:500px">
+                <input type="text" id="cnpjBusca" class="form-control text-center fs-4" placeholder="99.999.999/9999-99" autofocus>
+                <button class="btn btn-primary px-5" onclick="buscarCNPJ()">Verificar</button>
+            </div>
+            <div id="msg" class="mt-4"></div>
+        </div>`;
+
+    const input = document.getElementById('cnpjBusca');
+    input.focus();
+    
+    // Máscara CNPJ
+    input.addEventListener('input', e => {
+        let v = e.target.value.replace(/\D/g,'').substring(0,14);
+        v = v.replace(/^(\d{2})(\d)/,'$1.$2');
+        v = v.replace(/^(\d{2})\.(\d{3})(\d)/,'$1.$2.$3');
+        v = v.replace(/\.(\d{3})(\d)/,'.$1/$2');
+        v = v.replace(/(\d{4})(\d)/,'$1-$2');
+        e.target.value = v;
+    });
+
+    input.addEventListener('keyup', e => { if (e.key === 'Enter') buscarCNPJ(); });
+    new bootstrap.Modal('#modal').show();
+}
+
+// === BUSCAR CNPJ NA API ===
+function buscarCNPJ() {
+    let cnpj = document.getElementById('cnpjBusca').value.replace(/\D/g,'');
+    const msg = document.getElementById('msg');
+    if (cnpj.length !== 14) {
+        msg.innerHTML = '<div class="alert alert-warning">CNPJ deve ter 14 dígitos</div>';
+        return;
+    }
+
+    msg.innerHTML = '<div class="text-center"><div class="spinner-border text-primary"></div> Verificando...</div>';
+
+    fetch('/api/verificar_cnpj_disponivel/' + cnpj)
+        .then(r => r.json())
+        .then(data => {
+            if (data.bloqueado) {
+                msg.innerHTML = `<div class="alert alert-danger"><strong>Indisponível:</strong> ${data.motivo}</div>`;
+            } else {
+                carregarFormulario(cnpj, data.existe ? data.cliente : null);
+            }
+        })
+        .catch(() => msg.innerHTML = '<div class="alert alert-danger">Erro de conexão</div>');
+}
+
+// === CARREGA O FORMULÁRIO + CEP + MÁSCARA + TUDO FUNCIONANDO 100% ===
+function carregarFormulario(cnpjRaw, cliente = null) {
+    fetch('/consultas/form')
+        .then(r => r.text())
+        .then(html => {
+            document.getElementById('modalCorpo').innerHTML = html;
+            document.getElementById('modalTitulo').innerText = 'Nova Consulta';
+
+            // CNPJ formatado
+            document.querySelector('[name="cnpj"]').value = 
+                cnpjRaw.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5');
+
+            // Preenche cliente existente
+            if (cliente) {
+                Object.keys(cliente).forEach(k => {
+                    const campo = document.querySelector(`[name="${k}"]`);
+                    if (campo) campo.value = cliente[k];
+                });
+                ['cnpj', 'empresa', 'razao_social'].forEach(f => {
+                    const campo = document.querySelector(`[name="${f}"]`);
+                    if (campo) campo.readOnly = true;
+                });
+            }
+
+            // === CEP COM MÁSCARA E VIA CEP (FINALMENTE FUNCIONANDO!) ===
+            const cepInput = document.getElementById('cepField');
+            const status = document.getElementById('cepStatus');
+
+            cepInput.addEventListener('input', function() {
+                let v = this.value.replace(/\D/g, '').substring(0,8);
+                if (v.length > 5) v = v.replace(/^(\d{5})(\d)/, '$1-$2');
+                this.value = v;
+            });
+
+            cepInput.addEventListener('blur', function() {
+                const cep = this.value.replace(/\D/g, '');
+                if (cep.length !== 8) return;
+
+                status.innerHTML = '<small class="text-info">Buscando...</small>';
+                fetch(`https://viacep.com.br/ws/${cep}/json/`)
+                    .then(r => r.json())
+                    .then(d => {
+                        if (d.erro) {
+                            status.innerHTML = '<small class="text-danger">CEP não encontrado</small>';
+                            return;
+                        }
+                        document.getElementById('logradouro').value = (d.logradouro || '').toUpperCase();
+                        document.getElementById('bairro').value = (d.bairro || '').toUpperCase();
+                        document.getElementById('cidade').value = (d.localidade || '').toUpperCase();
+                        document.getElementById('estado').value = d.uf || '';
+                        status.innerHTML = '<small class="text-success">Endereço carregado!</small>';
+                        document.getElementById('numero').focus();
+                    })
+                    .catch(() => status.innerHTML = '<small class="text-danger">Erro na busca</small>');
+            });
+
+            // Cliente existente com CEP → busca automática
+            if (cepInput.value.replace(/\D/g, '').length === 8) {
+                cepInput.dispatchEvent(new Event('blur'));
+            }
+
+            // Envio do formulário
+            document.getElementById('formConsulta').onsubmit = function(e) {
+                e.preventDefault();
+                fetch('/consultas/nova', {method:'POST', body:new FormData(this)})
+                    .then(r => r.json())
+                    .then(res => {
+                        alert(res.success ? 'Consulta enviada com sucesso!' : res.message || 'Erro');
+                        if (res.success) {
+                            bootstrap.Modal.getInstance(document.getElementById('modal')).hide();
+                            setTimeout(() => location.reload(), 500);
+                        }
+                    });
+            };
+        });
+}
+
+
+// Busca em tempo real
+document.getElementById('busca')?.addEventListener('input', function() {
+    const termo = this.value.toLowerCase();
+    document.querySelectorAll('#tabelaClientes tbody tr').forEach(tr => {
+        const texto = tr.textContent.toLowerCase();
+        tr.style.display = texto.includes(termo) ? '' : 'none';
+    });
+});
+
+// === APROVAR / REJEITAR ===
+function aprovar(id) {
+    if (!confirm('APROVAR esta consulta?\n\nO cliente será marcado como RESERVADO e a reserva será renovada.')) 
+        return;
+
+    fetch('/consultas/aprovar/'+id, {method:'POST'})
+        .then(r => r.json())
+        .then(res => {
+            if (res.success) {
+                alert(res.message);
+                location.reload();
+            } else {
+                alert("Erro: " + res.message);
+            }
+        })
+        .catch(() => alert("Erro de conexão"));
+}
+
+function rejeitar(id) {
+    const motivo = prompt('Motivo da rejeição:');
+    if (!motivo?.trim()) return alert('Motivo obrigatório!');
+    fetch('/consultas/rejeitar/'+id, {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({motivo: motivo.trim()})
+    }).then(() => location.reload());
+}
+</script>
+{% endblock %}

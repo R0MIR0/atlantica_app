@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12 mb-4">
+        <h2 class="text-primary fw-bold">
+            <i class="bi bi-speedometer2"></i> Dashboard
+        </h2>
+        <p class="text-muted">Bem-vindo(a), <strong>{{ current_user.nome.split()[0] }}</strong> • {{ now.strftime('%d/%m/%Y %H:%M') }}</p>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- CARD CLIENTES -->
+    <div class="col-md-4">
+        <div class="card card-atlantica h-100 border-start border-primary border-5">
+            <div class="card-body d-flex align-items-center">
+                <div class="flex-shrink-0 bg-primary bg-opacity-10 rounded-3 p-4">
+                    <i class="bi bi-building fs-1 text-primary"></i>
+                </div>
+                <div class="flex-grow-1 ms-4">
+                    <h5 class="mb-1">Total de Clientes</h5>
+                    <h3 class="text-primary fw-bold">{{ total_clientes }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CARD CONSULTAS PENDENTES -->
+    <div class="col-md-4">
+        <div class="card card-atlantica h-100 border-start border-warning border-5">
+            <div class="card-body d-flex align-items-center">
+                <div class="flex-shrink-0 bg-warning bg-opacity-10 rounded-3 p-4">
+                    <i class="bi bi-clock-history fs-1 text-warning"></i>
+                </div>
+                <div class="flex-grow-1 ms-4">
+                    <h5 class="mb-1">Consultas Pendentes</h5>
+                    <h3 class="text-warning fw-bold">{{ total_consultas }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CARD RESERVAS ATIVAS -->
+    <div class="col-md-4">
+        <div class="card card-atlantica h-100 border-start border-success border-5">
+            <div class="card-body d-flex align-items-center">
+                <div class="flex-shrink-0 bg-success bg-opacity-10 rounded-3 p-4">
+                    <i class="bi bi-calendar-check fs-1 text-success"></i>
+                </div>
+                <div class="flex-grow-1 ms-4">
+                    <h5 class="mb-1">Reservas Ativas</h5>
+                    <h3 class="text-success fw-bold">{{ total_reservas_ativas }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ATALHOS RÁPIDOS -->
+<div class="row mt-5">
+    <div class="col-12">
+        <h4 class="text-primary mb-3">Ações Rápidas</h4>
+    </div>
+    <div class="col-md-3">
+        <a href="{{ url_for('consultas') }}" class="btn btn-outline-primary btn-lg w-100 py-4">
+            <i class="bi bi-file-earmark-plus fs-1"></i><br>Nova Consulta
+        </a>
+    </div>
+    <div class="col-md-3">
+        <a href="{{ url_for('clientes') }}" class="btn btn-outline-success btn-lg w-100 py-4">
+            <i class="bi bi-building-add fs-1"></i><br>Novo Cliente
+        </a>
+    </div>
+    <div class="col-md-3">
+        <a href="{{ url_for('reservas') }}" class="btn btn-outline-info btn-lg w-100 py-4">
+            <i class="bi bi-calendar-plus fs-1"></i><br>Nova Reserva
+        </a>
+    </div>
+    <div class="col-md-3">
+        <a href="{{ url_for('usuarios') }}" class="btn btn-outline-secondary btn-lg w-100 py-4">
+            <i class="bi bi-person-plus fs-1"></i><br>Novo Usuário
+        </a>
+    </div>
+</div>
+{% endblock %}

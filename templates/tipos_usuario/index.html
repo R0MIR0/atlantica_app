@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+{% block title %}Tipos de Usuário{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="text-primary fw-bold">
+        <i class="bi bi-tags"></i> Tipos de Usuário
+    </h2>
+    <button class="btn btn-primary shadow" onclick="novoTipo()">
+        <i class="bi bi-plus-circle"></i> Novo Tipo
+    </button>
+</div>
+
+<!-- BUSCA -->
+<div class="card card-atlantica mb-4">
+    <div class="card-body">
+        <div class="input-group">
+            <span class="input-group-text"><i class="bi bi-search"></i></span>
+            <input type="text" class="form-control" placeholder="Buscar tipo de usuário..." id="busca">
+        </div>
+    </div>
+</div>
+
+<!-- TABELA -->
+<div class="card card-atlantica">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0" id="tabela">
+                <thead class="table-primary">
+                    <tr>
+                        <th>TIPO DE USUÁRIO</th>
+                        <th class="text-center">USUÁRIOS VINCULADOS</th>
+                        <th class="text-center">AÇÕES</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for t in tipos %}
+                    <tr data-id="{{ t.id }}" ondblclick="editarTipo({{ t.id }}, '{{ t.tipo_usuario|escape }}')"
+                        style="cursor: pointer;">
+                        <td class="text-uppercase fw-bold">{{ t.tipo_usuario }}</td>
+                        <td class="text-center">
+                            <span class="badge bg-{{ 'success' if t.usuarios|length > 0 else 'secondary' }}">
+                                {{ t.usuarios|length }}
+                            </span>
+                        </td>
+                        <td class="text-center">
+                            {% if t.usuarios|length == 0 %}
+                                <button class="btn btn-sm btn-outline-danger" title="Excluir"
+                                        onclick="event.stopPropagation(); excluirTipo({{ t.id }}, '{{ t.tipo_usuario }}')">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            {% else %}
+                                <button class="btn btn-sm btn-secondary" disabled title="Em uso">
+                                    <i class="bi bi-lock"></i>
+                                </button>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="3" class="text-center text-muted py-5">
+                            <i class="bi bi-info-circle fs-1 d-block mb-3"></i>
+                            Nenhum tipo de usuário cadastrado ainda.<br>
+                            <small>Clique em <strong>Novo Tipo</strong> para começar.</small>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL NOVO / EDITAR -->
+<div class="modal fade" id="modalTipo" tabindex="-1">
+    <div class="modal-dialog modal-md">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="tituloModal">Novo Tipo de Usuário</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="idTipo">
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Nome do Tipo <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control text-uppercase fw-bold" id="nomeTipo"
+                           maxlength="50" placeholder="Ex: GERENTE, REPRESENTANTE, FINANCEIRO" required>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" onclick="salvar()">
+                    <i class="bi bi-check-lg"></i> Salvar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// NOVO TIPO
+function novoTipo() {
+    document.getElementById('tituloModal').textContent = 'Novo Tipo de Usuário';
+    document.getElementById('idTipo').value = '';
+    document.getElementById('nomeTipo').value = '';
+    new bootstrap.Modal(document.getElementById('modalTipo')).show();
+    document.getElementById('nomeTipo').focus();
+}
+
+// EDITAR (duplo clique na linha)
+function editarTipo(id, nome) {
+    document.getElementById('tituloModal').textContent = 'Editar Tipo de Usuário';
+    document.getElementById('idTipo').value = id;
+    document.getElementById('nomeTipo').value = nome;
+    new bootstrap.Modal(document.getElementById('modalTipo')).show();
+}
+
+// SALVAR
+function salvar() {
+    const id = document.getElementById('idTipo').value;
+    const nome = document.getElementById('nomeTipo').value.trim().toUpperCase();
+
+    if (!nome) {
+        alert('Digite o nome do tipo!');
+        return;
+    }
+
+    fetch('{{ url_for("tipos_usuario_form") }}', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+            'id': id || '',
+            'tipo_usuario': nome
+        })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert(data.message || 'Erro ao salvar tipo de usuário');
+        }
+    });
+}
+
+// EXCLUIR
+function excluirTipo(id, nome) {
+    if (confirm(`Tem certeza que deseja excluir o tipo "${nome}"?\n\nUsuários vinculados ficarão sem tipo definido.`)) {
+        fetch('/tipos_usuario/excluir/' + id, { method: 'POST' })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) location.reload();
+                else alert(data.message || 'Erro ao excluir');
+            });
+    }
+}
+
+// BUSCA EM TEMPO REAL
+document.getElementById('busca')?.addEventListener('input', function() {
+    const termo = this.value.toLowerCase();
+    document.querySelectorAll('#tabela tbody tr').forEach(tr => {
+        const texto = tr.textContent.toLowerCase();
+        tr.style.display = texto.includes(termo) ? '' : 'none';
+    });
+});
+</script>
+{% endblock %}

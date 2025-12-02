@@ -1,0 +1,180 @@
+{% extends "base.html" %}
+{% block title %}Níveis de Acesso{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row g-0">
+        <!-- SIDEBAR VERTICAL -->
+        <div class="col-12 col-lg-3 col-xl-2 bg-white border-end" style="min-height: calc(100vh - 90px);">
+            <div class="p-4">
+                <h5 class="fw-bold text-primary mb-4">
+                    Níveis de Acesso
+                </h5>
+                <div class="nav flex-column nav-pills" id="niveisSidebar">
+                    {% for nivel in niveis %}
+                    <button class="nav-link text-start mb-2 px-3 py-2 rounded-3 {% if nivel == 0 %}active bg-danger text-white{% endif %}"
+                            data-bs-toggle="pill" data-bs-target="#nivel-{{ nivel }}" type="button">
+                        {% if nivel == 0 %}
+                            <strong>ADMINISTRADOR</strong>
+                            <span class="badge bg-white text-danger ms-2">TOTAL</span>
+                        {% else %}
+                            <span class="badge bg-primary rounded-pill me-2" style="width: 32px;">{{ nivel }}</span>
+                            <strong>Nível {{ nivel }}</strong>
+                        {% endif %}
+                    </button>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- CONTEÚDO PRINCIPAL -->
+        <div class="col-12 col-lg-9 col-xl-10 p-4 p-lg-5">
+            <div class="tab-content">
+                {% for nivel in niveis %}
+                <div class="tab-pane fade {% if nivel == 0 %}show active{% endif %}" id="nivel-{{ nivel }}">
+
+                    <!-- HEADER COM BOTÃO SALVAR NO TOPO (SEM SOMBRA) -->
+                    <div class="d-flex justify-content-between align-items-center mb-4 p-4 rounded-4
+                        {% if nivel == 0 %}bg-danger text-white{% else %}bg-success text-white{% endif %}">
+                        <h3 class="mb-0 fw-bold">
+                            {% if nivel == 0 %}
+                                ADMINISTRADOR — ACESSO TOTAL
+                            {% else %}
+                                NÍVEL {{ nivel }} — Configurar Permissões
+                            {% endif %}
+                        </h3>
+
+                        {% if nivel != 0 %}
+                        <button class="btn btn-light btn-lg px-4 salvar-nivel" data-nivel="{{ nivel }}">
+                            Salvar Alterações
+                        </button>
+                        {% endif %}
+                    </div>
+
+                    <!-- PERMISSÕES EM 3 COLUNAS (SEM SOMBRA NOS CARDS) -->
+                    <div class="card border-0 rounded-4">
+                        <div class="card-body p-5">
+                            <div class="row g-4" id="permissoes-{{ nivel }}">
+                                <!-- JS preenche aqui -->
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const permissoesSalvas = {{ permissoes|tojson }};
+const funcoes = {{ funcoes|tojson }};
+
+function carregarPermissoes(nivel) {
+    const container = document.getElementById(`permissoes-${nivel}`);
+    let html = '';
+
+    funcoes.forEach((func, i) => {
+        const temPermissao = nivel === 0 || (permissoesSalvas[nivel] && permissoesSalvas[nivel].includes(func));
+        const checked = temPermissao ? 'checked' : '';
+        const disabled = nivel === 0 ? 'disabled' : '';
+
+        if (i % 3 === 0 && i !== 0) html += '</div><div class="row g-4">';
+
+        html += `
+            <div class="col-12 col-md-4">
+                <div class="form-check form-switch form-check-lg p-3 bg-white rounded-3 border">
+                    <input class="form-check-input" type="checkbox"
+                           id="perm_${nivel}_${i}"
+                           data-func="${func}"
+                           ${checked} ${disabled}>
+                    <label class="form-check-label fw-medium" for="perm_${nivel}_${i}">
+                        ${func}
+                    </label>
+                </div>
+            </div>`;
+    });
+
+    container.innerHTML = '<div class="row g-4">' + html + '</div>';
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+    {% for nivel in niveis %}
+        carregarPermissoes({{ nivel }});
+    {% endfor %}
+});
+
+document.addEventListener('click', function(e) {
+    const btn = e.target.closest('.salvar-nivel');
+    if (!btn) return;
+
+    const nivel = parseInt(btn.dataset.nivel);
+    const dadosAtualizados = { ...permissoesSalvas };
+
+    dadosAtualizados[nivel] = [];
+    document.querySelectorAll(`#nivel-${nivel} .form-check-input:checked:not(:disabled)`).forEach(cb => {
+        dadosAtualizados[nivel].push(cb.dataset.func);
+    });
+
+    dadosAtualizados[0] = funcoes;
+
+    fetch("{{ url_for('niveis_acesso_salvar') }}", {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(dadosAtualizados)
+    })
+    .then(r => r.json())
+    .then(res => {
+        const toast = document.createElement('div');
+        toast.className = `position-fixed top-0 start-50 translate-middle-x mt-4 alert alert-${res.success ? 'success' : 'danger'} border-0`;
+        toast.style.zIndex = 9999;
+        toast.innerHTML = `
+            <strong>${res.success ? 'Salvo com sucesso!' : 'Erro ao salvar'}</strong>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="alert"></button>
+        `;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 4000);
+    });
+});
+</script>
+
+<style>
+/* REMOVE TODAS AS SOMBRAS DOS BOTÕES E CARDS */
+.shadow, .shadow-sm, .shadow-lg { box-shadow: none !important; }
+
+/* Deixa só uma borda sutil nos itens de permissão */
+.form-check-switch {
+    border: 1px solid #e0e0e0 !important;
+    transition: border-color 0.2s;
+}
+.form-check-switch:hover {
+    border-color: #198754 !important;
+}
+
+/* Sidebar sem sombra */
+.nav-pills .nav-link {
+    box-shadow: none !important;
+    border-radius: 12px;
+}
+.nav-pills .nav-link.active {
+    box-shadow: none !important;
+}
+
+/* Cards sem sombra */
+.card {
+    box-shadow: none !important;
+    border: 1px solid #e9ecef !important;
+    border-radius: 16px !important;
+}
+
+.form-check-input:checked {
+    background-color: #198754;
+    border-color: #198754;
+}
+.form-switch .form-check-input {
+    width: 3.2em;
+    height: 1.8em;
+}
+</style>
+{% endblock %}

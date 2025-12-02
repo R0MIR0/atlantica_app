@@ -1,0 +1,13 @@
+:root {
+    --azul-atlantica: #003087;
+    --azul-claro: #005eb8;
+    --cinza-claro: #f5f5f5;
+}
+
+body { font-family: 'Roboto', sans-serif; background: var(--cinza-claro); }
+.navbar { background: var(--azul-atlantica); }
+.btn-primary { background: var(--azul-atlantica); border: none; }
+.btn-primary:hover { background: var(--azul-claro); }
+.table { background: white; }
+.modal-header { background: var(--azul-atlantica); color: white; }
+.text-uppercase { text-transform: uppercase; }

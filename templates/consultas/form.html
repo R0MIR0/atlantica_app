@@ -1,0 +1,140 @@
+<div class="p-4 p-md-5">
+    <form id="formConsulta" class="needs-validation" novalidate>
+        <div class="row g-4">
+
+            <!-- CABEÇALHO DO FORM -->
+            <div class="col-12 text-center mb-4">
+                <i class="bi bi-building-fill display-4 text-primary mb-3"></i>
+                <h3 class="fw-bold text-primary">Nova Consulta</h3>
+                <p class="text-muted">Preencha os dados do cliente</p>
+            </div>
+
+            <!-- DADOS DA EMPRESA -->
+            <div class="col-lg-6">
+                <label class="form-label fw-bold text-primary">Empresa *</label>
+                <input name="empresa" class="form-control form-control-lg shadow-sm text-uppercase fw-bold" required>
+                <div class="invalid-feedback">Campo obrigatório</div>
+            </div>
+            <div class="col-lg-6">
+                <label class="form-label fw-bold text-primary">Razão Social *</label>
+                <input name="razao_social" class="form-control form-control-lg shadow-sm text-uppercase" required>
+                <div class="invalid-feedback">Campo obrigatório</div>
+            </div>
+
+            <div class="col-md-4">
+                <label class="form-label">CNPJ *</label>
+                <input name="cnpj" class="form-control form-control-lg font-monospace bg-light" readonly required>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">IE</label>
+                <input name="ie" class="form-control form-control-lg shadow-sm text-uppercase">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Grupogrupo</label>
+                <input name="grupo" class="form-control form-control-lg shadow-sm text-uppercase">
+            </div>
+
+            <!-- ENDEREÇO COM ESTILO -->
+            <div class="col-12 mt-4">
+                <h5 class="fw-bold text-primary border-bottom pb-2">
+                    <i class="bi bi-geo-alt-fill me-2"></i> Endereço
+                </h5>
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label">CEP *</label>
+                <div class="input-group">
+                    <input type="text" name="cep" id="cepField" class="form-control form-control-lg shadow-sm" 
+                           placeholder="00000-000" maxlength="9" required>
+                    <span class="input-group-text bg-white">
+                        <div class="spinner-border spinner-border-sm text-primary d-none" id="cepLoading"></div>
+                    </span>
+                </div>
+                <div id="cepStatus" class="small mt-1"></div>
+            </div>
+
+            <div class="col-md-6">
+                <label class="form-label">Logradouro *</label>
+                <input name="logradouro" id="logradouro" class="form-control form-control-lg shadow-sm text-uppercase" required>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Número *</label>
+                <input name="numero" id="numero" class="form-control form-control-lg shadow-sm" required>
+            </div>
+
+            <div class="col-md-4">
+                <label class="form-label">Complemento</label>
+                <input name="complemento" class="form-control form-control-lg shadow-sm text-uppercase">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Bairro *</label>
+                <input name="bairro" id="bairro" class="form-control form-control-lg shadow-sm text-uppercase" required>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Cidade *</label>
+                <input name="cidade" id="cidade" class="form-control form-control-lg shadow-sm text-uppercase" required>
+            </div>
+            <div class="col-md-1">
+                <label class="form-label">UF *</label>
+                <input name="estado" id="estado" class="form-control form-control-lg text-center fw-bold" maxlength="2" readonly required>
+            </div>
+
+            <!-- CONTATO -->
+            <div class="col-12 mt-4">
+                <h5 class="fw-bold text-primary border-bottom pb-2">
+                    <i class="bi bi-person-lines-fill me-2"></i> Contato
+                </h5>
+            </div>
+
+            <div class="col-md-4">
+                <label class="form-label">Nome Contato</label>
+                <input name="nome_contato" class="form-control form-control-lg shadow-sm text-uppercase">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Telefone</label>
+                <input name="telefone_contato" class="form-control form-control-lg shadow-sm">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">E-mail</label>
+                <input name="email_contato" type="email" class="form-control form-control-lg shadow-sm">
+            </div>
+
+            <!-- REPRESENTANTE E DATA -->
+            <div class="col-md-6 mt-4">
+                <label class="form-label text-success fw-bold">Representante</label>
+                <div class="p-3 bg-light rounded-3 shadow-sm text-center fw-bold text-success fs-5">
+                    {{ current_user.nome }}
+                </div>
+            </div>
+            <div class="col-md-6 mt-4">
+                <label class="form-label text-info fw-bold">Data da Consulta</label>
+                <div class="p-3 bg-info bg-opacity-10 rounded-3 shadow-sm text-center fw-bold text-info fs-5">
+                    {{ hoje }}
+                </div>
+            </div>
+
+            <!-- BOTÕES -->
+            <div class="col-12 text-end mt-5">
+                <button type="button" class="btn btn-secondary btn-lg px-5 me-3 shadow" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle me-2"></i> Cancelar
+                </button>
+                <button type="submit" class="btn btn-success btn-lg px-5 shadow-lg">
+                    <i class="bi bi-send-check-fill me-2"></i> Enviar Consulta
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<style>
+    .form-control:focus {
+        border-color: #0d6efd !important;
+        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25) !important;
+    }
+    .input-group-text {
+        border-radius: 0.5rem 0 0 0.5rem !important;
+    }
+    .form-control-lg {
+        border-radius: 0.7rem !important;
+    }
+</style>

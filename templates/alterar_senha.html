@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% block title %}Alterar Senha{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-5">
+            <div class="card card-atlantica shadow-lg border-0">
+                <div class="card-header bg-primary text-white text-center py-4">
+                    <h4 class="mb-0 fw-bold">
+                        <i class="bi bi-shield-lock"></i> Alterar Minha Senha
+                    </h4>
+                </div>
+                <div class="card-body p-5">
+                    <div class="text-center mb-4">
+                        <div class="avatar bg-primary bg-opacity-10 rounded-circle mx-auto d-flex align-items-center justify-content-center" 
+                             style="width: 80px; height: 80px;">
+                            <i class="bi bi-person-circle text-primary" style="font-size: 40px;"></i>
+                        </div>
+                        <h5 class="mt-3">{{ current_user.nome.split()[0] }}</h5>
+                        <small class="text-muted">{{ current_user.email }}</small>
+                    </div>
+
+                    <form method="POST" action="{{ url_for('alterar_senha') }}">
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">Senha Atual *</label>
+                            <div class="input-group">
+                                <input type="password" name="senha_atual" class="form-control form-control-lg" required>
+                                <button class="btn btn-outline-secondary" type="button" onclick="togglePass(this)">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">Nova Senha *</label>
+                            <div class="input-group">
+                                <input type="password" name="nova_senha" id="senha1" class="form-control form-control-lg" required minlength="6">
+                                <button class="btn btn-outline-secondary" type="button" onclick="togglePass(this)">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                            </div>
+                            <div class="form-text">Mínimo 6 caracteres</div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">Confirmar Nova Senha *</label>
+                            <div class="input-group">
+                                <input type="password" name="confirmar_senha" id="senha2" class="form-control form-control-lg" required>
+                                <button class="btn btn-outline-secondary" type="button" onclick="togglePass(this)">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div-hline class="my-4"></>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary btn-lg fw-bold">
+                                <i class="bi bi-check-circle"></i> Atualizar Senha
+                            </button>
+                            <a href="{{ url_for('dashboard') }}" class="btn btn-secondary btn-lg">
+                                <i class="bi bi-arrow-left"></i> Voltar ao Dashboard
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function togglePass(btn) {
+    const input = btn.previousElementSibling;
+    if (input.type === 'password') {
+        input.type = 'text';
+        btn.innerHTML = '<i class="bi bi-eye-slash"></i>';
+    } else {
+        input.type = 'password';
+        btn.innerHTML = '<i class="bi bi-eye"></i>';
+    }
+}
+
+// Validação em tempo real
+document.querySelectorAll('#senha1, #senha2').forEach(input => {
+    input.addEventListener('input', () => {
+        const s1 = document.getElementById('senha1').value;
+        const s2 = document.getElementById('senha2').value;
+        if (s1 && s2 && s1 !== s2) {
+            document.getElementById('senha2').setCustomValidity('As senhas não coincidem');
+        } else {
+            document.getElementById('senha2').setCustomValidity('');
+        }
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+{% block title %}Detalhes da Consulta{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-5">
+    <div class="row justify-content-center">
+        <div class="col-xl-10">
+
+            <div class="text-center mb-5">
+                <i class="bi bi-file-earmark-check-fill display-1 text-primary opacity-20"></i>
+                <h1 class="display-5 fw-bold text-primary mt-3">Detalhes da Consulta</h1>
+                <p class="lead text-muted">Consulta realizada em {{ consulta.data_consulta.strftime('%d/%m/%Y') }}</p>
+            </div>
+
+            <div class="card border-0 shadow-lg rounded-4 overflow-hidden">
+                <div class="card-header bg-gradient-primary text-white text-center py-4">
+                    <h2 class="mb-0 fw-bold text-uppercase">{{ consulta.empresa }}</h2>
+                    <p class="mb-0 opacity-90">CNPJ: {{ consulta.cnpj }}</p>
+                </div>
+
+                <div class="card-body p-5 bg-light">
+
+                    <div class="text-center mb-5">
+                        <span class="badge rounded-pill px-5 py-3 fs-4 
+                            bg-{{ 'success' if consulta.status_consulta == 'APROVADO' else 'danger' if consulta.status_consulta == 'REJEITADO' else 'warning' }}
+                            text-white shadow">
+                            <i class="bi 
+                                {{ 'bi-check-circle-fill' if consulta.status_consulta == 'APROVADO' else 
+                                   'bi-x-circle-fill' if consulta.status_consulta == 'REJEITADO' else 
+                                   'bi-clock-history' }}"></i>
+                            {{ consulta.status_consulta }}
+                        </span>
+
+                        {% if consulta.motivo_negativa %}
+                        <div class="alert alert-danger mt-4 rounded-4">
+                            <strong>Motivo da Rejeição:</strong><br>
+                            {{ consulta.motivo_negativa }}
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="row g-5">
+
+                        <div class="col-lg-6">
+                            <h4 class="text-primary fw-bold border-bottom pb-2">
+                                Dados da Empresa
+                            </h4>
+                            <table class="table table-borderless">
+                                <tr><td class="fw-bold">Empresa:</td><td class="text-uppercase fw-bold">{{ consulta.empresa }}</td></tr>
+                                <tr><td class="fw-bold">Razão Social:</td><td>{{ consulta.razao_social or '—' }}</td></tr>
+                                <tr><td class="fw-bold">CNPJ:</td><td><span class="font-monospace">{{ consulta.cnpj }}</span></td></tr>
+                                <tr><td class="fw-bold">IE:</td><td>{{ consulta.ie or '—' }}</td></tr>
+                                <tr><td class="fw-bold">Grupo:</td><td>{{ consulta.grupo or '—' }}</td></tr>
+                            </table>
+                        </div>
+
+                        <div class="col-lg-6">
+                            <h4 class="text-success fw-bold border-bottom pb-2">
+                                Representante
+                            </h4>
+                            <div class="bg-white p-4 rounded-4 shadow-sm text-center">
+                                <i class="bi bi-person-circle display-4 text-success mb-3"></i>
+                                <h3 class="fw-bold">{{ consulta.nome_representante }}</h3>
+                                <small class="text-muted">Responsável pela consulta</small>
+                            </div>
+                        </div>
+
+                        <div class="col-12">
+                            <h4 class="text-primary fw-bold border-bottom pb-2">
+                                Endereço Completo
+                            </h4>
+                            <div class="bg-white p-4 rounded-4 shadow">
+                                <p class="fs-5 mb-2">
+                                    <strong>{{ consulta.logradouro|upper }}, {{ consulta.numero }}</strong>
+                                    {% if consulta.complemento %}
+                                        - {{ consulta.complemento|upper }}
+                                    {% endif %}
+                                </p>
+                                <p class="mb-2">{{ consulta.bairro|upper }} • {{ consulta.cidade|upper }}/{{ consulta.estado }}</p>
+                                <p class="text-muted">CEP: {{ consulta.cep }}</p>
+                            </div>
+                        </div>
+
+                        <div class="col-lg-6">
+                            <h4 class="text-primary fw-bold border-bottom pb-2">
+                                Contato
+                            </h4>
+                            <div class="bg-white p-4 rounded-4 shadow">
+                                <p><strong>Nome:</strong> {{ consulta.nome_contato|upper or '—' }}</p>
+                                <p><strong>Telefone:</strong> {{ consulta.telefone_contato or '—' }}</p>
+                                <p><strong>E-mail:</strong> {{ consulta.email_contato or '—' }}</p>
+                            </div>
+                        </div>
+
+                        {% if consulta.status_consulta == 'APROVADO' %}
+                        <div class="col-lg-6">
+                            <h4 class="text-success fw-bold border-bottom pb-2">
+                                Reserva Ativa
+                            </h4>
+                            <div class="alert alert-success rounded-4 text-center py-4">
+                                <i class="bi bi-calendar-check display-4 mb-3"></i>
+                                <h4>Cliente RESERVADO</h4>
+                                <p class="mb-0">Representante: <strong>{{ consulta.nome_representante }}</strong></p>
+                                {% if reserva %}
+                                <p class="mb-0">Válida até: <strong>{{ reserva.data_fim.strftime('%d/%m/%Y') }}</strong></p>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endif %}
+
+                    </div>
+
+                    <div class="text-center mt-5">
+                        <a href="/consultas" class="btn btn-primary btn-lg px-5 rounded-pill shadow">
+                            Voltar para Consultas
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .bg-gradient-primary {
+        background: linear-gradient(135deg, #0d6efd, #0dcaf0) !important;
+    }
+    .card { border-radius: 1.5rem !important; }
+    .table td:first-child { width: 40%; color: #555; }
+</style>
+{% endblock %}
