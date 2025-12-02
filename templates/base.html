@@ -56,35 +56,19 @@
                         </li>
 
                         <!-- CONSULTAS -->
-                        {% if tem_permissao("Consultas - Listar") or tem_permissao("Consultas - Criar") %}
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">Consultas</a>
-                            <ul class="dropdown-menu">
-                                {% if tem_permissao("Consultas - Listar") and endpoint_existe('consultas') %}
-                                    <li><a class="dropdown-item" href="{{ url_for('consultas') }}">Lista de Consultas</a></li>
-                                {% endif %}
-                                {% if tem_permissao("Consultas - Criar") and endpoint_existe('consultas_nova') %}
-                                    <li><a class="dropdown-item" href="{{ url_for('consulta_form') }}">Nova Consulta</a></li>
-                                {% endif %}
-                            </ul>
+                            {% if tem_permissao("Consultas - Listar") and endpoint_existe('consultas') %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('consultas') }}">Consultas</a>
                         </li>
                         {% endif %}
-
+                        
                         <!-- CLIENTES -->
-                        {% if tem_permissao("Clientes - Listar") or tem_permissao("Clientes - Criar") %}
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">Clientes</a>
-                            <ul class="dropdown-menu">
-                                {% if tem_permissao("Clientes - Listar") and endpoint_existe('clientes') %}
-                                    <li><a class="dropdown-item" href="{{ url_for('clientes') }}">Lista de Clientes</a></li>
-                                {% endif %}
-                                {% if tem_permissao("Clientes - Criar") and endpoint_existe('cliente_form') %}
-                                    <li><a class="dropdown-item" href="{{ url_for('cliente_form') }}">Novo Cliente</a></li>
-                                {% endif %}
-                            </ul>
+                         {% if tem_permissao("Clientes - Listar") and endpoint_existe('clientes') %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('clientes') }}">Clientes</a>
                         </li>
                         {% endif %}
-
+                    
                         <!-- RESERVAS -->
                         {% if tem_permissao("Reservas - Listar") and endpoint_existe('reservas') %}
                         <li class="nav-item">

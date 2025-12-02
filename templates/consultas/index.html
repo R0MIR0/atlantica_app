@@ -141,7 +141,6 @@ function buscarCNPJ() {
         .catch(() => msg.innerHTML = '<div class="alert alert-danger">Erro de conexão</div>');
 }
 
-// === CARREGA O FORMULÁRIO + CEP + MÁSCARA + TUDO FUNCIONANDO 100% ===
 function carregarFormulario(cnpjRaw, cliente = null) {
     fetch('/consultas/form')
         .then(r => r.text())
@@ -165,7 +164,7 @@ function carregarFormulario(cnpjRaw, cliente = null) {
                 });
             }
 
-            // === CEP COM MÁSCARA E VIA CEP (FINALMENTE FUNCIONANDO!) ===
+            // === CEP COM MÁSCARA E VIA CEP ===
             const cepInput = document.getElementById('cepField');
             const status = document.getElementById('cepStatus');
 
@@ -197,9 +196,28 @@ function carregarFormulario(cnpjRaw, cliente = null) {
                     .catch(() => status.innerHTML = '<small class="text-danger">Erro na busca</small>');
             });
 
-            // Cliente existente com CEP → busca automática
             if (cepInput.value.replace(/\D/g, '').length === 8) {
                 cepInput.dispatchEvent(new Event('blur'));
+            }
+
+            // === MÁSCARA DE TELEFONE (com 9º dígito) ===
+            const telefoneInput = document.querySelector('[name="telefone_contato"]');
+            if (telefoneInput) {
+                telefoneInput.addEventListener('input', function(e) {
+                    let v = e.target.value.replace(/\D/g, '').substring(0, 11);
+
+                    if (v.length === 11) {
+                        v = v.replace(/^(\d{2})(\d{5})(\d{4})$/, '($1) $2-$3');
+                    } else if (v.length === 10) {
+                        v = v.replace(/^(\d{2})(\d{4})(\d{4})$/, '($1) $2-$3');
+                    } else {
+                        v = v.replace(/^(\d{0,2})/, '($1');
+                        if (v.length > 3) v = v.replace(/^\((\d{2})/, '($1) ');
+                        if (v.length > 9) v = v.replace(/(\d{4,5})$/, '-$1');
+                        if (v.length > 14) v = v.substring(0, 14);
+                    }
+                    e.target.value = v;
+                });
             }
 
             // Envio do formulário

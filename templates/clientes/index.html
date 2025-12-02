@@ -55,14 +55,14 @@
                             {% if tem_permissao("Clientes - Listar") %}
                             <button class="btn btn-sm btn-info text-white me-1" title="Ver detalhes"
                                     onclick="verCliente({{ c.id }})">
-                                <i class="bi bi-eye"></i> Ver
+                                <i class="bi bi-eye"></i>
                             </button>
                             {% endif %}
 
                             <!-- EDITAR -->
                             {% if tem_permissao("Clientes - Editar") %}
                             <a href="{{ url_for('cliente_form', id=c.id) }}" class="btn btn-sm btn-warning" title="Editar">
-                                <i class="bi bi-pencil"></i> Editar
+                                <i class="bi bi-pencil"></i>
                             </a>
                             {% endif %}
 
@@ -70,7 +70,7 @@
                             {% if tem_permissao("Clientes - Excluir") %}
                             <button class="btn btn-sm btn-danger ms-1" title="Excluir"
                                     onclick="excluirCliente({{ c.id }}, '{{ c.empresa|e }}')">
-                                <i class="bi bi-trash"></i> Excluir
+                                <i class="bi bi-trash"></i>
                             </button>
                             {% endif %}
 

@@ -515,15 +515,25 @@ def consultas_nova():
         if not representante:
             return jsonify({"success": False, "message": "Representante obrigatório"}), 400
 
-        # === LIMPEZA DO CNPJ (PYTHON, NÃO JAVASCRIPT!) ===
-        cnpj_raw = request.form.get('cnpj', '')
-        cnpj_limpo = ''.join(filter(str.isdigit, cnpj_raw))  # ← CORRETO EM PYTHON
+        # === PEGA O CNPJ COM MÁSCARA DIRETO DO FORMULÁRIO ===
+        cnpj_com_mascara = request.form.get('cnpj', '').strip()
+
+        # Remove tudo que não for número (garante que está limpo)
+        cnpj_numeros = ''.join(filter(str.isdigit, cnpj_com_mascara))
+
+        # Valida se tem 14 dígitos
+        if len(cnpj_numeros) != 14:
+            return jsonify({"success": False, "message": "CNPJ inválido"}), 400
+
+        # === APLICA A MÁSCARA PARA SALVAR NO BANCO ===
+        cnpj_formatado = f"{cnpj_numeros[:2]}.{cnpj_numeros[2:5]}.{cnpj_numeros[5:8]}/{cnpj_numeros[8:12]}-{cnpj_numeros[12:]}"
+        # Resultado: 12.345.678/0001-99
 
         # === CRIA A CONSULTA ===
         consulta = Consulta(
             empresa=request.form.get('empresa', '').strip().upper(),
             razao_social=request.form.get('razao_social', '').strip().upper(),
-            cnpj=cnpj_limpo,
+            cnpj=cnpj_formatado,           # ← AQUI AGORA VAI COM MÁSCARA
             ie=request.form.get('ie', '').strip().upper(),
             grupo=request.form.get('grupo', '').strip().upper(),
             cep=request.form.get('cep', '').replace('-', ''),
@@ -805,6 +815,35 @@ def cliente_view(id):
     cliente = Cliente.query.get_or_404(id)
     reservas = Reserva.query.filter_by(cliente_id=cliente.id).order_by(Reserva.data_inicio.desc()).all()
     return render_template('clientes/view.html', cliente=cliente, reservas=reservas)
+
+# Mude de /excluir para /delete
+@app.route('/clientes/excluir/<int:id>', methods=['POST'])  # só POST, sem GET
+@login_required
+@permissao_requerida("Clientes - Excluir")
+def cliente_delete(id):
+    cliente = Cliente.query.get_or_404(id)
+
+    # Verifica se tem reservas
+    if Reserva.query.filter_by(cliente_id=id).first():
+        return jsonify({
+            "success": False,
+            "message": f"Não é possível excluir {cliente.empresa or cliente.nome}. Há reservas vinculadas."
+        })
+
+    try:
+        db.session.delete(cliente)
+        db.session.commit()
+        return jsonify({
+            "success": True,
+            "message": "Cliente excluído com sucesso!"
+        })
+    except Exception as e:
+        db.session.rollback()
+        app.logger.error(f"Erro ao excluir cliente {id}: {e}")
+        return jsonify({
+            "success": False,
+            "message": "Erro interno do servidor. Tente novamente."
+        }), 500
 
 # ======================= RESERVAS - VERSÃO FINAL OFICIAL 100% PROTEGIDA =======================
 
