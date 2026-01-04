@@ -7,7 +7,8 @@ name = "pypi"
 flask = "*"
 flask-login = "==0.6.3"
 werkzeug = "==3.0.4"
-requests = "==2.32.3"
+requests = "*"
+pandas = "*"
 
 [dev-packages]
 

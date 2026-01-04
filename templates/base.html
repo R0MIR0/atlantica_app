@@ -83,10 +83,7 @@
                         </li>
                         {% endif %}
 
-                        <!-- USUARIO -->
-                        {% if endpoint_existe('usuarios') %}
-                        <li><a class="nav-link" href="{{ url_for('usuarios') }}">Usuários</a></li>
-                        {% endif %}
+                        <!-- USUÁRIOS REMOVIDO DO MENU PRINCIPAL (agora só aparece no dropdown de Administração para admins) -->
 
                         <!-- ADMINISTRAÇÃO (só Admin) -->
                         {% if current_user.nivel_acesso == 0 %}

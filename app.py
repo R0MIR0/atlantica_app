@@ -186,11 +186,78 @@ def logout():
 @app.route('/dashboard')
 @login_required
 def dashboard():
+    tipo = current_user.tipo.tipo_usuario.strip().lower()
+
+    # Queries base
+    query_clientes = Cliente.query
+    query_consultas = Consulta.query
+    query_reservas = Reserva.query.filter_by(status='ATIVA')
+
+    # Aplica filtro se for representante ou gerente
+    if tipo == 'representante':
+        nome_rep = current_user.nome.strip().upper()
+
+        query_clientes = query_clientes.filter(
+            func.trim(func.upper(Cliente.nome_representante)) == nome_rep
+        )
+        query_consultas = query_consultas.filter(
+            func.trim(func.upper(Consulta.nome_representante)) == nome_rep
+        )
+        # TENTA filtrar Reserva — se o campo não existir, ignora o filtro (não quebra)
+        try:
+            query_reservas = query_reservas.filter(
+                func.trim(func.upper(Reserva.nome_representante)) == nome_rep
+            )
+        except AttributeError:
+            try:
+                query_reservas = query_reservas.filter(
+                    func.trim(func.upper(Reserva.representante)) == nome_rep
+                )
+            except AttributeError:
+                pass  # não tem campo de representante na Reserva → mostra todas (ou zero, veja abaixo)
+
+    elif tipo == 'gerente':
+        representantes_do_gerente = Usuario.query.filter(
+            Usuario.gerente_id == current_user.id,
+            Usuario.tipo.has(TipoUsuario.tipo_usuario.ilike('%representante%'))
+        ).with_entities(Usuario.nome).all()
+
+        nomes_representantes = [rep.nome.strip().upper() for rep in representantes_do_gerente]
+
+        if nomes_representantes:
+            query_clientes = query_clientes.filter(
+                func.trim(func.upper(Cliente.nome_representante)).in_(nomes_representantes)
+            )
+            query_consultas = query_consultas.filter(
+                func.trim(func.upper(Consulta.nome_representante)).in_(nomes_representantes)
+            )
+            try:
+                query_reservas = query_reservas.filter(
+                    func.trim(func.upper(Reserva.nome_representante)).in_(nomes_representantes)
+                )
+            except AttributeError:
+                try:
+                    query_reservas = query_reservas.filter(
+                        func.trim(func.upper(Reserva.representante)).in_(nomes_representantes)
+                    )
+                except AttributeError:
+                    pass
+        else:
+            query_clientes = query_clientes.filter(Cliente.id == 0)
+            query_consultas = query_consultas.filter(Consulta.id == 0)
+            query_reservas = query_reservas.filter(Reserva.id == 0)
+
+    # Executa as contagens
+    total_clientes = query_clientes.count()
+    total_consultas_pendentes = query_consultas.filter_by(status_consulta='PENDENTE').count()
+    total_reservas_ativas = query_reservas.count()
+
     return render_template('dashboard.html',
-        total_clientes=Cliente.query.count(),
-        total_consultas=Consulta.query.filter_by(status_consulta='PENDENTE').count(),
-        total_reservas_ativas=Reserva.query.filter_by(status='ATIVA').count(),
-        now=datetime.now())
+        total_clientes=total_clientes,
+        total_consultas=total_consultas_pendentes,
+        total_reservas_ativas=total_reservas_ativas,
+        now=datetime.now()
+    )
 
 # ======================= USUÁRIOS =======================
 from sqlalchemy import or_
@@ -203,9 +270,10 @@ def usuarios():
 
     tipo = current_user.tipo.tipo_usuario.strip().lower()
 
-    # 1. REPRESENTANTE → vê apenas ele mesmo
+    # 1. REPRESENTANTE → NÃO vê ninguém na lista de usuários
     if tipo == 'representante':
-        query = query.filter(Usuario.id == current_user.id)
+        # Condição impossível → retorna lista vazia
+        query = query.filter(Usuario.id == 0)  # ou False_()
 
     # 2. GERENTE → vê:
     #    • ele mesmo
@@ -214,18 +282,22 @@ def usuarios():
         query = query.filter(
             or_(
                 Usuario.id == current_user.id,                    # ele mesmo
-                Usuario.gerente_id == current_user.id             # seus representantes diretos
+                and_(
+                    Usuario.gerente_id == current_user.id,        # seus representantes diretos
+                    Usuario.tipo.has(TipoUsuario.tipo_usuario.ilike('%representante%'))
+                )
             )
         )
 
-    # 3. ADMINISTRADOR (ou outro tipo) → vê todos
+    # 3. ADMINISTRADOR (ou outro tipo qualquer que não seja representante nem gerente)
+    #    → vê todos os usuários
     # Sem filtro adicional
 
     usuarios = query.all()
 
     tipos = TipoUsuario.query.order_by(TipoUsuario.tipo_usuario).all()
     
-    # Lista de gerentes (para o select no formulário)
+    # Lista de gerentes (para o select no formulário de criação/edição)
     gerentes = Usuario.query.join(TipoUsuario)\
         .filter(TipoUsuario.tipo_usuario.ilike('%gerente%'))\
         .order_by(Usuario.nome).all()
