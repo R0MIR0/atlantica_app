@@ -260,7 +260,7 @@ def dashboard():
     )
 
 # ======================= USUÁRIOS =======================
-from sqlalchemy import or_
+from sqlalchemy import or_   # ainda pode manter se usar em outro lugar
 
 @app.route('/usuarios')
 @login_required
@@ -272,32 +272,23 @@ def usuarios():
 
     # 1. REPRESENTANTE → NÃO vê ninguém na lista de usuários
     if tipo == 'representante':
-        # Condição impossível → retorna lista vazia
-        query = query.filter(Usuario.id == 0)  # ou False_()
+        query = query.filter(Usuario.id == 0)  # ou query.filter(False)
 
-    # 2. GERENTE → vê:
-    #    • ele mesmo
-    #    • TODOS os representantes que têm gerente_id = seu ID
+    # 2. GERENTE → vê ele mesmo + seus representantes diretos
     elif tipo == 'gerente':
         query = query.filter(
-            or_(
-                Usuario.id == current_user.id,                    # ele mesmo
-                and_(
-                    Usuario.gerente_id == current_user.id,        # seus representantes diretos
-                    Usuario.tipo.has(TipoUsuario.tipo_usuario.ilike('%representante%'))
-                )
+            (
+                (Usuario.gerente_id == current_user.id) &
+                Usuario.tipo.has(TipoUsuario.tipo_usuario.ilike('%representante%'))
             )
         )
 
-    # 3. ADMINISTRADOR (ou outro tipo qualquer que não seja representante nem gerente)
-    #    → vê todos os usuários
-    # Sem filtro adicional
+    # 3. ADMINISTRADOR → vê todos (sem filtro)
 
     usuarios = query.all()
 
     tipos = TipoUsuario.query.order_by(TipoUsuario.tipo_usuario).all()
     
-    # Lista de gerentes (para o select no formulário de criação/edição)
     gerentes = Usuario.query.join(TipoUsuario)\
         .filter(TipoUsuario.tipo_usuario.ilike('%gerente%'))\
         .order_by(Usuario.nome).all()
@@ -367,7 +358,6 @@ def usuario_form(id=None):
 def usuario_ver(id):
     usuario = Usuario.query.get_or_404(id)
     return render_template('usuarios/view.html', usuario=usuario)
-
 
 @app.route('/usuarios/excluir/<int:id>', methods=['POST'])
 @login_required
@@ -888,26 +878,18 @@ def cliente_view(id):
     reservas = Reserva.query.filter_by(cliente_id=cliente.id).order_by(Reserva.data_inicio.desc()).all()
     return render_template('clientes/view.html', cliente=cliente, reservas=reservas)
 
-# Mude de /excluir para /delete
-@app.route('/clientes/excluir/<int:id>', methods=['POST'])  # só POST, sem GET
+@app.route('/clientes/delete/<int:id>', methods=['POST'])
 @login_required
 @permissao_requerida("Clientes - Excluir")
 def cliente_delete(id):
     cliente = Cliente.query.get_or_404(id)
-
-    # Verifica se tem reservas
-    if Reserva.query.filter_by(cliente_id=id).first():
-        return jsonify({
-            "success": False,
-            "message": f"Não é possível excluir {cliente.empresa or cliente.nome}. Há reservas vinculadas."
-        })
 
     try:
         db.session.delete(cliente)
         db.session.commit()
         return jsonify({
             "success": True,
-            "message": "Cliente excluído com sucesso!"
+            "message": "Cliente e reservas vinculadas excluídos com sucesso!"
         })
     except Exception as e:
         db.session.rollback()
@@ -916,6 +898,7 @@ def cliente_delete(id):
             "success": False,
             "message": "Erro interno do servidor. Tente novamente."
         }), 500
+
 
 # ======================= RESERVAS - VERSÃO FINAL OFICIAL 100% PROTEGIDA =======================
 

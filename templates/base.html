@@ -82,8 +82,16 @@
                             <a class="nav-link" href="{{ url_for('relatorios') }}">Relatórios</a>
                         </li>
                         {% endif %}
+                        
+                         <!-- USUARIOS -->
+                        {% if tem_permissao("Usuários - Listar") 
+                        and endpoint_existe('usuarios') 
+                        and current_user.tipo.tipo_usuario.strip().lower() != 'administrador' %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('usuarios') }}">Usuários</a>
+                        </li>
+                        {% endif %}
 
-                        <!-- USUÁRIOS REMOVIDO DO MENU PRINCIPAL (agora só aparece no dropdown de Administração para admins) -->
 
                         <!-- ADMINISTRAÇÃO (só Admin) -->
                         {% if current_user.nivel_acesso == 0 %}
