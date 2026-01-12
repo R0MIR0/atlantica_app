@@ -3,8 +3,12 @@
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
+    {% set tipo_usuario = current_user.tipo.tipo_usuario.strip().lower() %}
+    {% set titulo_pagina = 'Representantes' if tipo_usuario == 'gerente' else 'Usuários' %}
+    {% set icone = 'bi-people-fill' if tipo_usuario == 'gerente' else 'bi-people' %}
+
     <h2 class="text-primary fw-bold">
-        <i class="bi bi-people"></i> Usuários
+        <i class="bi {{ icone }}"></i> {{ titulo_pagina }}
     </h2>
 
     {% if tem_permissao("Usuários - Criar") %}
@@ -114,7 +118,9 @@
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header bg-primary text-white">
-                <h5 class="modal-title">Detalhes do Usuário</h5>
+               <h5 class="modal-title" id="modalDetalhesUsuarioLabel">
+                    {{ 'Detalhes do Representante' if current_user.tipo.tipo_usuario.strip().lower() == 'gerente' else 'Detalhes do Usuário' }}
+                </h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body" id="conteudoModal"></div>
