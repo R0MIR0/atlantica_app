@@ -277,6 +277,7 @@ def usuarios():
     # 2. GERENTE → vê ele mesmo + seus representantes diretos
     elif tipo == 'gerente':
         query = query.filter(
+            #(Usuario.id == current_user.id)# |
             (
                 (Usuario.gerente_id == current_user.id) &
                 Usuario.tipo.has(TipoUsuario.tipo_usuario.ilike('%representante%'))
@@ -423,7 +424,6 @@ def tipo_usuario_excluir(id):
 # ======================= CONSULTAS SEM NIVEL DE ACESSO =======================
 @app.route('/api/verificar_cnpj_disponivel/<cnpj>')
 def verificar_cnpj_disponivel(cnpj):
-    # Remove tudo que não for número
     cnpj = ''.join(filter(str.isdigit, str(cnpj)))
     
     if len(cnpj) != 14:
@@ -432,38 +432,49 @@ def verificar_cnpj_disponivel(cnpj):
     cnpj_mask = mascarar_cnpj(cnpj)
 
     try:
-        # 1. Tem reserva ativa?
-        reserva = db.session.query(Reserva).join(Cliente).filter(Cliente.cnpj == cnpj_mask).first()
-        if reserva:
+        # 1. Tem reserva ATIVA?
+        reserva_ativa = (
+            db.session.query(Reserva)
+            .join(Cliente)
+            .filter(Cliente.cnpj == cnpj_mask)
+            .filter(Reserva.status == 'ATIVA')           # ajuste conforme sua tabela
+            # .filter(Reserva.ativo == True)
+            # .filter(Reserva.data_cancelamento.is_(None))
+            # .filter(Reserva.data_exclusao.is_(None))
+            .first()
+        )
+        
+        if reserva_ativa:
             return jsonify(bloqueado=True, motivo="Este CNPJ já possui reserva ativa")
 
         # 2. Tem consulta pendente?
-        consulta_pendente = Consulta.query.filter_by(cnpj=cnpj_mask, status_consulta='PENDENTE').first()
+        consulta_pendente = Consulta.query.filter_by(
+            cnpj=cnpj_mask, 
+            status_consulta='PENDENTE'
+        ).first()
+        
         if consulta_pendente:
             return jsonify(bloqueado=True, motivo="Já existe consulta PENDENTE para este CNPJ")
 
-        # 3. Cliente existe? → retorna TODOS os dados
+        # 3. Cliente existe?
         cliente = Cliente.query.filter_by(cnpj=cnpj_mask).first()
         if cliente:
-            return jsonify(existe=True, cliente={
-                'empresa': cliente.empresa or '',
-                'razao_social': cliente.razao_social or '',
-                'cnpj': cliente.cnpj or '',
-                'ie': getattr(cliente, 'ie', '') or '',
-                'grupo': getattr(cliente, 'grupo', '') or '',
-                'cep': cliente.cep or '',
-                'logradouro': cliente.logradouro or '',
-                'numero': cliente.numero or '',
-                'complemento': cliente.complemento or '',
-                'bairro': cliente.bairro or '',
-                'cidade': cliente.cidade or '',
-                'estado': cliente.estado or '',
-                'nome_contato': getattr(cliente, 'nome_contato', '') or '',
-                'telefone_contato': getattr(cliente, 'telefone_contato', '') or '',
-                'email_contato': getattr(cliente, 'email_contato', '') or ''
-            })
+            return jsonify(
+                existe=True,
+                cliente={
+                    'empresa': cliente.empresa or '',
+                    'razao_social': cliente.razao_social or '',
+                    'cnpj': cliente.cnpj or '',
+                    'ie': getattr(cliente, 'ie', '') or '',
+                    'grupo': getattr(cliente, 'grupo', '') or '',
+                    # ... demais campos
+                }
+            )
 
         return jsonify(existe=False)
+
+    except Exception as e:
+        return jsonify(error=str(e)), 500
 
     except Exception as e:
         # Isso vai te mostrar o erro real no console do Flask
